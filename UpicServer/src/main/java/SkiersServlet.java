@@ -1,3 +1,4 @@
+import java.io.PrintWriter;
 import javax.servlet.*;
 import javax.servlet.http.*;
 import javax.servlet.annotation.*;
@@ -11,7 +12,9 @@ public class SkiersServlet extends HttpServlet {
     }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-
+    protected void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
+        res.setStatus(HttpServletResponse.SC_OK);
+        PrintWriter out = res.getWriter();
+        out.flush();
     }
 }

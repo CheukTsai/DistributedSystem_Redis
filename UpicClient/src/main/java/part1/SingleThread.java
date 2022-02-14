@@ -3,117 +3,95 @@ package part1;
 import io.swagger.client.ApiException;
 import io.swagger.client.ApiResponse;
 import io.swagger.client.api.SkiersApi;
-import io.swagger.client.api.ResortsApi;
-import io.swagger.client.api.SkiersApi;
-import io.swagger.client.model.Purchase;
-import io.swagger.client.model.PurchaseItems;
-import java.io.IOException;
-import java.util.Random;
+import io.swagger.client.model.LiftRide;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
-import model.LogStderr;
 
-public class SingleThread  implements Runnable{
-    private static final Integer HTTP_OK = 200;
-    private static final Integer HTTP_Created = 201;
-    private static final Integer PHASE_TWO_HOURS = 3;
-    private static final Integer PHASE_THREE_HOURS = 5;
-    private Integer totalPurchaseCall;
-    private Integer storeID;
-    private String IPAddress;
-    private Integer numOfCustomersPerStore;
-    private Integer maxItemId;
-    private Integer numPurchases;
-    private Integer numItemsPerPurchase;
-    private String date;
-    AtomicInteger successPurchaseCnt;
-    AtomicInteger failPurchaseCnt;
-    CountDownLatch phaseTwo;
-    CountDownLatch phaseThree;
-    private Random rand = new Random();
+public class SingleThread implements Runnable {
 
-    public SingleThread(Integer storeID, String IPAddress, Integer numOfCustomersPerStore,
-                        Integer maxItemId, Integer numPurchases, Integer numItemsPerPurchase, String date,
-                        AtomicInteger successPurchaseCnt, AtomicInteger failPurchaseCnt,
-                        CountDownLatch phaseTwo, CountDownLatch phaseThree) {
-        this.storeID = storeID;
-        this.IPAddress = IPAddress;
-        this.numOfCustomersPerStore = numOfCustomersPerStore;
-        this.maxItemId = maxItemId;
-        this.numPurchases = numPurchases;
-        this.numItemsPerPurchase = numItemsPerPurchase;
-        this.date = date;
-        this.successPurchaseCnt = successPurchaseCnt;
-        this.failPurchaseCnt = failPurchaseCnt;
-        this.phaseTwo = phaseTwo;
-        this.phaseThree = phaseThree;
-        this.totalPurchaseCall = Client1.RUNNING_HOURS * numPurchases;
-    }
+  private static final Integer HTTP_OK = 200;
+  private static final Integer HTTP_CREATED = 201;
+  private static final Integer ALLOW_ATTEMPTS_NUM = 5;
 
-    @Override
-    public void run() {
-        Integer storeSuccessPurchase = 0;
-        String url = "http://" + this.IPAddress + ":8080/SuperMarketServer_war";
-        SkiersApi apiInstance = new SkiersApi();
-        apiInstance.getApiClient().setBasePath(url);
+  private Integer totalRideLiftCall;
+  private String IPAddress;
+  private Integer resortID;
+  private String dayID;
+  private String seasonID;
+  private Integer startSkierID;
+  private Integer endSkierID;
+  private Integer startTime;
+  private Integer endTime;
+  private Integer numLifts;
+  AtomicInteger successCallCount;
+  AtomicInteger failCallCount;
+  CountDownLatch curLatch;
+  CountDownLatch nextLatch;
 
-        Integer storeID = this.storeID; // Integer | ID of the store the purchase takes place at
-        String date = this.date; // String | date of purchase
+  public SingleThread(Integer totalRideLiftCall, String IPAddress, Integer resortID,
+      String dayID, String seasonID, Integer startSkierID, Integer endSkierID, Integer startTime,
+      Integer endTime, Integer numLifts,
+      AtomicInteger successCallCount, AtomicInteger failCallCount,
+      CountDownLatch curLatch, CountDownLatch nextLatch) {
+    this.totalRideLiftCall = totalRideLiftCall;
+    this.IPAddress = IPAddress;
+    this.resortID = resortID;
+    this.dayID = dayID;
+    this.seasonID = seasonID;
+    this.startSkierID = startSkierID;
+    this.endSkierID = endSkierID;
+    this.startTime = startTime;
+    this.endTime = endTime;
+    this.numLifts = numLifts;
+    this.successCallCount = successCallCount;
+    this.failCallCount = failCallCount;
+    this.curLatch = curLatch;
+    this.nextLatch = nextLatch;
+  }
 
-        for (int i = 0; i < totalPurchaseCall; i++) {
-            try {
-                // Integer | customer ID making purchase
+  @Override
+  public void run() {
+    Integer uploadedLiftNum = 0;
+    String url = "http://" + IPAddress + ":8080/UpicServer_war_exploded/skiers/";
+    SkiersApi api = new SkiersApi();
 
-                Integer custID = this.rand.ints(this.storeID * 1000,
-                        this.storeID * 1000 + numOfCustomersPerStore).findFirst().getAsInt();
-                Purchase body = createPurchaseCall(); // Purchase | items purchased
-//        ApiResponse errorTestRes = apiInstance.newPurchaseWithHttpInfo (body, 0, 0, "2888-77-66");
-                ApiResponse res = apiInstance.newPurchaseWithHttpInfo (body, storeID, custID, date);
-                ApiResponse response = apiInstance.writeNewLiftRideCall()
-                if (res.getStatusCode() == HTTP_Created || res.getStatusCode() == HTTP_OK) {
-                    this.storeSuccessPurchase++;
-                    successPurchaseCnt.getAndIncrement();
-                    // initiate phase 2
-                    if (storeSuccessPurchase == numPurchases * PHASE_TWO_HOURS) {
-//            System.out.println("phase 2 start at : " + successPurchaseCnt.get());
-                        phaseTwo.countDown();
-                    }
-                    // initiate phase 3
-                    if (storeSuccessPurchase == numPurchases * PHASE_THREE_HOURS) {
-//            System.out.println("phase 3 start at : " + successPurchaseCnt.get() );
-                        phaseThree.countDown();
-                    }
-                } else {
-                    failPurchaseCnt.getAndIncrement();
-                }
-            } catch (ApiException e) {
-                failPurchaseCnt.getAndIncrement();
-                LogStderr.setErrToFile();
-                System.err.println(">>> Begin of current error log");
-                System.err.println("Exception when calling PurchaseApi#newPurchase");
-                int errorCode = e.getCode();
-                System.err.println("HTTP Error Code: " + errorCode);
-                System.err.println("HTTP Error Header: " + e.getResponseHeaders());
-                System.err.println("HTTP Error Body: " + e.getResponseBody());
-                System.err.println(">>> End of current error log");
-                LogStderr.EndErrorLogToFile();
-                e.printStackTrace();
-            }
+
+    api.getApiClient().setBasePath(url);
+
+    int i = 0, curFailure = 0;
+    while (i < totalRideLiftCall) {
+      Integer curLiftId = ThreadLocalRandom.current().nextInt(1, numLifts + 1);
+      Integer curTime = ThreadLocalRandom.current().nextInt(1, numLifts);
+      Integer curSkierId = ThreadLocalRandom.current().nextInt(startSkierID, endSkierID);
+      LiftRide curLiftRide = generateLiftRideCall(curTime, curLiftId);
+      try {
+        ApiResponse res = api.writeNewLiftRideWithHttpInfo(curLiftRide, resortID, seasonID,
+            dayID, curSkierId);
+        while (curFailure < ALLOW_ATTEMPTS_NUM) {
+          if (res.getStatusCode() == HTTP_OK || res.getStatusCode() == HTTP_CREATED) {
+            successCallCount.getAndIncrement();
+            break;
+          }
+          curFailure++;
         }
-
-    }
-
-    private Purchase createPurchaseCall() {
-        Purchase newPurchase = new Purchase();
-        for (int i = 0; i < numItemsPerPurchase; i++) {
-            int itemID = rand.ints(0, maxItemId).findFirst().getAsInt();
-            int qty = 1;
-            PurchaseItems item = new PurchaseItems();
-            item.setItemID(String.valueOf(itemID));
-            item.setNumberOfItems(qty);
-            newPurchase.addItemsItem(item);
+        if (curFailure == ALLOW_ATTEMPTS_NUM) {
+          failCallCount.getAndIncrement();
         }
-        return newPurchase;
+        i++;
+      } catch (ApiException e) {
+        e.printStackTrace();
+      }
+      curLatch.countDown();
+      nextLatch.countDown();
     }
+  }
 
+  private LiftRide generateLiftRideCall(Integer time, Integer liftId) {
+    LiftRide liftRide = new LiftRide();
+    liftRide.setLiftID(1);
+    liftRide.setTime(time);
+    liftRide.setWaitTime((int) (Math.random() * 10));
+    return liftRide;
+  }
 }
