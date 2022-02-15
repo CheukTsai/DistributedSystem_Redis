@@ -1,4 +1,4 @@
-//package part1;
+package part1;//package part1;
 //
 //import io.swagger.client.ApiException;
 //import io.swagger.client.ApiResponse;

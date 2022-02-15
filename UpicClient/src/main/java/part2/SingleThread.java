@@ -1,9 +1,11 @@
-package part1;
+package part2;
 
 import io.swagger.client.ApiException;
 import io.swagger.client.ApiResponse;
 import io.swagger.client.api.SkiersApi;
 import io.swagger.client.model.LiftRide;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -24,6 +26,7 @@ public class SingleThread implements Runnable {
   private Integer startTime;
   private Integer endTime;
   private Integer numLifts;
+  private CopyOnWriteArrayList<Record> recordList;
   AtomicInteger successCallCount;
   AtomicInteger failCallCount;
   CountDownLatch curLatch;
@@ -33,7 +36,7 @@ public class SingleThread implements Runnable {
       String dayID, String seasonID, Integer startSkierID, Integer endSkierID, Integer startTime,
       Integer endTime, Integer numLifts,
       AtomicInteger successCallCount, AtomicInteger failCallCount,
-      CountDownLatch curLatch, CountDownLatch nextLatch) {
+      CountDownLatch curLatch, CountDownLatch nextLatch, CopyOnWriteArrayList<Record> recordList) {
     this.totalRideLiftCall = totalRideLiftCall;
     this.IPAddress = IPAddress;
     this.resortID = resortID;
@@ -48,11 +51,12 @@ public class SingleThread implements Runnable {
     this.failCallCount = failCallCount;
     this.curLatch = curLatch;
     this.nextLatch = nextLatch;
+    this.recordList = recordList;
   }
 
   @Override
   public void run() {
-    String url = "http://" + IPAddress + ":8080/UpicServer_war_exploded/skiers/";
+    String url = "http://" + IPAddress + ":8080/UpicServer_war/skiers/";
     SkiersApi api = new SkiersApi();
 
 
@@ -65,20 +69,23 @@ public class SingleThread implements Runnable {
       Integer curSkierId = ThreadLocalRandom.current().nextInt(startSkierID, endSkierID);
       LiftRide curLiftRide = generateLiftRideCall(curTime, curLiftId);
       try {
-        int curFailure = 0;
+        int curFailure = 0, curCode = 0;
+        long start = System.currentTimeMillis();
         ApiResponse res = api.writeNewLiftRideWithHttpInfo(curLiftRide, resortID, seasonID,
             dayID, curSkierId);
         while (curFailure < ALLOW_ATTEMPTS_NUM) {
+          curCode = res.getStatusCode();
           if (res.getStatusCode() == HTTP_OK || res.getStatusCode() == HTTP_CREATED) {
             successCallCount.getAndIncrement();
             break;
           }
           curFailure++;
-
         }
         if (curFailure == ALLOW_ATTEMPTS_NUM) {
           failCallCount.getAndIncrement();
         }
+        long end = System.currentTimeMillis();
+        recordList.add(new Record(start, end, end-start, "POST", curCode));
         i++;
       } catch (ApiException e) {
         e.printStackTrace();
@@ -88,7 +95,6 @@ public class SingleThread implements Runnable {
     curLatch.countDown();
     if(nextLatch != null) {
       nextLatch.countDown();
-
     }
   }
 

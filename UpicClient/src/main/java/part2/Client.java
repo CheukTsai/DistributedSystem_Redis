@@ -1,9 +1,12 @@
-package part1;
+package part2;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
-import part2.Record;
 
 public class Client {
   private static String IPAddress;
@@ -14,7 +17,7 @@ public class Client {
   private static Integer numThreads;
   private static Integer numLifts;
   private static Integer numRuns;
-  private List<Record> recordList;
+  private static CopyOnWriteArrayList<Record> recordList;
 
   public static void main(String[] args) throws InterruptedException{
     CmdParser cmdParser = new CmdParser();
@@ -26,6 +29,7 @@ public class Client {
     numLifts = cmdParser.numLifts;
     numRuns = cmdParser.numRuns;
     numSkiers = cmdParser.numSkiers;
+    recordList = new CopyOnWriteArrayList<>();
 
     long start = System.currentTimeMillis();
     Integer phase1Threads = numThreads / 4,
@@ -56,26 +60,40 @@ public class Client {
     //Phase1
     Phase phase1 = new Phase(numReq1, phase1Threads,IPAddress, resortID, dayID, seasonID,
         phase1numSkiers, start1, end1, numLifts, success, failure,
-        total, latch2);
+        total, latch2, recordList);
     phase1.processPhase();
 
 //    Phase2
 //
     Phase phase2 = new Phase(numReq2, phase2Threads,IPAddress, resortID, dayID, seasonID,
         phase2numSkiers, start2, end2, numLifts, success, failure,
-        total, latch3);
+        total, latch3, recordList);
     phase2.processPhase();
 
     //Phase3
     Phase phase3 = new Phase(numReq3, phase3Threads,IPAddress, resortID, dayID, seasonID,
         phase3numSkiers, start3, end3, numLifts, success, failure,
-        total, null);
+        total, null, recordList);
     phase3.processPhase();
 
     total.await();
 
     long end = System.currentTimeMillis();
     long wallTime = end - start;
+    long totalTime = 0;
+    long p1Time = 0;
+
+    Collections.sort(recordList, new Comparator<Record>() {
+      @Override
+      public int compare(Record o1, Record o2) {
+        return Long.compare(o1.getLatency(), o2.getLatency());
+      }
+    });
+
+    for(int i = 0; i <recordList.size(); i++) {
+      if(i < (recordList.size() / 100)) p1Time += recordList.get(i).getLatency();
+      totalTime += recordList.get(i).getLatency();
+    }
 
     System.out.println("Number of threads: " + numThreads);
     System.out.println("Number of skiers: " + numSkiers);
@@ -86,9 +104,12 @@ public class Client {
     System.out.println("# of successful requests :" + success.get());
     System.out.println("# of failed requests :" + failure.get());
     System.out.println("wall time: " + wallTime);
-    System.out.println( "throughput per second: " + (success.get() + failure.get()) /
-        (double) (wallTime / 1000) + " post requests per second");
-
+    System.out.println( "throughput per second: " + (int)((success.get() + failure.get()) /
+        (double)(wallTime / 1000) )+ " post requests per second");
+    System.out.println("median response time: " +
+        recordList.get((recordList.size()- 1)/2 ).getLatency() + "ms");
+    System.out.println("mean response time: " + (double) (totalTime / recordList.size()) + "ms");
+    System.out.println("p99 response time: " + (double) (p1Time / (recordList.size() /100)) + "ms");
   }
 
 }

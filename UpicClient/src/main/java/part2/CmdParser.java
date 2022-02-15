@@ -1,4 +1,4 @@
-package part1;
+package part2;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;

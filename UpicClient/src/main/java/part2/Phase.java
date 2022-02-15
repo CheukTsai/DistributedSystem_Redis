@@ -1,5 +1,7 @@
-package part1;
+package part2;
 
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -19,6 +21,7 @@ public class Phase {
   private Integer startTime;
   private Integer endTime;
   private Integer numLifts;
+  private CopyOnWriteArrayList<Record> recordList;
   AtomicInteger successCallCount;
   AtomicInteger failCallCount;
   CountDownLatch curLatch;
@@ -27,7 +30,7 @@ public class Phase {
   public Phase(Integer totalReq, Integer numThread, String IPAddress, Integer resortID, String dayID,
       String seasonID, Integer numSkier, Integer startTime, Integer endTime, Integer numLifts,
       AtomicInteger successCallCount, AtomicInteger failCallCount,
-      CountDownLatch curLatch, CountDownLatch nextLatch) {
+      CountDownLatch curLatch, CountDownLatch nextLatch, CopyOnWriteArrayList<Record> recordList) {
     this.totalReq = totalReq;
     this.numThread = numThread;
     this.IPAddress = IPAddress;
@@ -42,6 +45,7 @@ public class Phase {
     this.failCallCount = failCallCount;
     this.curLatch = curLatch;
     this.nextLatch = nextLatch;
+    this.recordList = recordList;
   }
 
   public void processPhase() throws InterruptedException{
@@ -51,7 +55,8 @@ public class Phase {
       int start = i * range + 1;
       int end = Math.min(numSkier, (i + 1) * numSkier);
       SingleThread t = new SingleThread(totalReq, IPAddress, resortID, dayID, seasonID, start, end,
-          startTime, endTime, numLifts, successCallCount, failCallCount, curLatch, nextLatch);
+          startTime, endTime, numLifts, successCallCount, failCallCount,
+          curLatch, nextLatch, recordList);
       Thread thread = new Thread(t);
       thread.start();
       if(nextLatch != null) {
