@@ -4,6 +4,7 @@ import io.swagger.client.ApiException;
 import io.swagger.client.ApiResponse;
 import io.swagger.client.api.SkiersApi;
 import io.swagger.client.model.LiftRide;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -24,6 +25,7 @@ public class SingleThread implements Runnable {
   private Integer startTime;
   private Integer endTime;
   private Integer numLifts;
+  private CopyOnWriteArrayList<Record> recordList;
   AtomicInteger successCallCount;
   AtomicInteger failCallCount;
   CountDownLatch curLatch;
@@ -33,7 +35,7 @@ public class SingleThread implements Runnable {
       String dayID, String seasonID, Integer startSkierID, Integer endSkierID, Integer startTime,
       Integer endTime, Integer numLifts,
       AtomicInteger successCallCount, AtomicInteger failCallCount,
-      CountDownLatch curLatch, CountDownLatch nextLatch) {
+      CountDownLatch curLatch, CountDownLatch nextLatch, CopyOnWriteArrayList<Record> recordList) {
     this.totalRideLiftCall = totalRideLiftCall;
     this.IPAddress = IPAddress;
     this.resortID = resortID;
@@ -48,14 +50,13 @@ public class SingleThread implements Runnable {
     this.failCallCount = failCallCount;
     this.curLatch = curLatch;
     this.nextLatch = nextLatch;
+    this.recordList = recordList;
   }
 
   @Override
   public void run() {
-    String url = "http://" + IPAddress + ":8080/UpicServer_war_exploded/skiers/";
+    String url = "http://" + IPAddress + ":8080/UpicServer_war/skiers/";
     SkiersApi api = new SkiersApi();
-
-
     api.getApiClient().setBasePath(url);
 
     int i = 0;
@@ -63,40 +64,46 @@ public class SingleThread implements Runnable {
       Integer curLiftId = ThreadLocalRandom.current().nextInt(1, numLifts + 1);
       Integer curTime = ThreadLocalRandom.current().nextInt(startTime, endTime);
       Integer curSkierId = ThreadLocalRandom.current().nextInt(startSkierID, endSkierID);
-      LiftRide curLiftRide = generateLiftRideCall(curTime, curLiftId);
+      Integer curWaitTime = (int) (Math.random() * 10);
+      long start = System.currentTimeMillis();
+
       try {
-        int curFailure = 0;
+
+        LiftRide curLiftRide = generateLiftRideCall(curTime, curLiftId, curWaitTime);
+        int curFailure = 0, curCode = 0;
         ApiResponse res = api.writeNewLiftRideWithHttpInfo(curLiftRide, resortID, seasonID,
             dayID, curSkierId);
         while (curFailure < ALLOW_ATTEMPTS_NUM) {
+          curCode = res.getStatusCode();
           if (res.getStatusCode() == HTTP_OK || res.getStatusCode() == HTTP_CREATED) {
             successCallCount.getAndIncrement();
+            long end = System.currentTimeMillis();
+            recordList.add(new Record(start, end, end-start, "POST", curCode));
+            System.out.println((end - start));
             break;
           }
           curFailure++;
-
         }
         if (curFailure == ALLOW_ATTEMPTS_NUM) {
           failCallCount.getAndIncrement();
         }
+
         i++;
       } catch (ApiException e) {
+        failCallCount.getAndIncrement();
         e.printStackTrace();
       }
 
     }
     curLatch.countDown();
-    if(nextLatch != null) {
-      nextLatch.countDown();
-
-    }
+    nextLatch.countDown();
   }
 
-  private LiftRide generateLiftRideCall(Integer time, Integer liftId) {
+  private LiftRide generateLiftRideCall(Integer time, Integer liftId, Integer waitTime) {
     LiftRide liftRide = new LiftRide();
     liftRide.setLiftID(liftId);
     liftRide.setTime(time);
-    liftRide.setWaitTime((int) (Math.random() * 10));
+    liftRide.setWaitTime(waitTime);
     return liftRide;
   }
 }

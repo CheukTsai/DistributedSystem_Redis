@@ -27,7 +27,7 @@ public class ResortsServlet extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
         res.setContentType("text/plain");
         String urlPath = req.getPathInfo();
-        HttpRequestStatus curStatus = checkStatus(urlPath);
+        HttpRequestStatus curStatus = checkStatus(urlPath, "GET");
         PrintWriter out = res.getWriter();
         res.setContentType("application/json");
         res.setCharacterEncoding("UTF-8");
@@ -46,12 +46,29 @@ public class ResortsServlet extends HttpServlet {
     }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-
+    protected void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
+        res.setContentType("text/plain");
+        String urlPath = req.getPathInfo();
+        HttpRequestStatus curStatus = checkStatus(urlPath, "GET");
+        PrintWriter out = res.getWriter();
+        res.setContentType("application/json");
+        res.setCharacterEncoding("UTF-8");
+        if(!curStatus.equals(HttpRequestStatus.NOT_VALID)) {
+            res.setStatus(HttpServletResponse.SC_OK);
+            if(curStatus.equals(HttpRequestStatus.GET_NO_PARAM)) handleNoParam(res);
+            else{
+                out.write(gson.toJson(outputMsg));
+                out.flush();
+            }
+        } else {
+            res.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            out.write(gson.toJson(outputMsg));
+            out.flush();
+        }
     }
 
 
-    private HttpRequestStatus checkStatus(String urlPath) {
+    private HttpRequestStatus checkStatus(String urlPath, String type) {
         if(urlPath == null || urlPath.isEmpty()) return HttpRequestStatus.GET_NO_PARAM;
         String resortID = "";
         String seasons = "";
@@ -70,6 +87,7 @@ public class ResortsServlet extends HttpServlet {
                 return HttpRequestStatus.NOT_VALID;
             }
             return HttpRequestStatus.GET_SKIERS_WITH_RESORT_SEASON_DAY;
+
         } else if(urlParts.length == 3) {
             if(!urlParts[2].equals("seasons")) {
                 outputMsg = new Message("Page3 Not Found");
@@ -80,7 +98,8 @@ public class ResortsServlet extends HttpServlet {
                 outputMsg = new Message("Invalid resortNumber");
                 return HttpRequestStatus.NOT_VALID;
             }
-            return HttpRequestStatus.GET_SEASONS_WITH_RESORT;
+            if(type.equals("GET")) return HttpRequestStatus.GET_SEASONS_WITH_RESORT;
+            else return HttpRequestStatus.POST_SEASONS_WITH_RESORT;
         } else {
             outputMsg = new Message(String.valueOf(urlParts.length));
             return HttpRequestStatus.NOT_VALID;

@@ -59,13 +59,7 @@ public class Phase {
           curLatch, nextLatch, recordList);
       Thread thread = new Thread(t);
       thread.start();
-      if(nextLatch != null) {
-        nextLatch.await();
-      }
-    }
-  }
 
-  public void await() throws InterruptedException{
-    curLatch.await();
+    }
   }
 }

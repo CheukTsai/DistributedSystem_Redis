@@ -58,8 +58,6 @@ public class SingleThread implements Runnable {
   public void run() {
     String url = "http://" + IPAddress + ":8080/UpicServer_war/skiers/";
     SkiersApi api = new SkiersApi();
-
-
     api.getApiClient().setBasePath(url);
 
     int i = 0;
@@ -67,10 +65,13 @@ public class SingleThread implements Runnable {
       Integer curLiftId = ThreadLocalRandom.current().nextInt(1, numLifts + 1);
       Integer curTime = ThreadLocalRandom.current().nextInt(startTime, endTime);
       Integer curSkierId = ThreadLocalRandom.current().nextInt(startSkierID, endSkierID);
-      LiftRide curLiftRide = generateLiftRideCall(curTime, curLiftId);
+      Integer curWaitTime = (int) (Math.random() * 10);
+      long start = System.currentTimeMillis();
+
       try {
+
+        LiftRide curLiftRide = generateLiftRideCall(curTime, curLiftId, curWaitTime);
         int curFailure = 0, curCode = 0;
-        long start = System.currentTimeMillis();
         ApiResponse res = api.writeNewLiftRideWithHttpInfo(curLiftRide, resortID, seasonID,
             dayID, curSkierId);
         while (curFailure < ALLOW_ATTEMPTS_NUM) {
@@ -86,23 +87,23 @@ public class SingleThread implements Runnable {
         }
         long end = System.currentTimeMillis();
         recordList.add(new Record(start, end, end-start, "POST", curCode));
+        System.out.println((end - start));
         i++;
       } catch (ApiException e) {
+        failCallCount.getAndIncrement();
         e.printStackTrace();
       }
 
     }
     curLatch.countDown();
-    if(nextLatch != null) {
-      nextLatch.countDown();
-    }
+    nextLatch.countDown();
   }
 
-  private LiftRide generateLiftRideCall(Integer time, Integer liftId) {
+  private LiftRide generateLiftRideCall(Integer time, Integer liftId, Integer waitTime) {
     LiftRide liftRide = new LiftRide();
     liftRide.setLiftID(liftId);
     liftRide.setTime(time);
-    liftRide.setWaitTime((int) (Math.random() * 10));
+    liftRide.setWaitTime(waitTime);
     return liftRide;
   }
 }
