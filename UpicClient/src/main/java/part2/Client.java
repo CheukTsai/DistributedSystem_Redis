@@ -1,7 +1,9 @@
 package part2;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -101,6 +103,35 @@ public class Client {
     for(int i = 0; i <recordList.size(); i++) {
       totalTime += recordList.get(i).getLatency();
     }
+
+    Collections.sort(recordList, new Comparator<Record>() {
+      @Override
+      public int compare(Record o1, Record o2) {
+        return Long.compare(o1.getEndTime(), o2.getEndTime());
+      }
+    });
+    List<int[]> meanLatList = new ArrayList<>();
+    int n = recordList.size();
+    long s = recordList.get(0).getEndTime(), cur = 0;
+    int count = 1, i = 0, sec = 0;
+    while(i < n) {
+      if(recordList.get(i).getEndTime() - start <= 1000) {
+        cur += recordList.get(i).getLatency();
+        count++;
+      } else {
+        sec++;
+        meanLatList.add(new int[]{sec, (int) (cur / count)});
+        count = 1;
+        start = recordList.get(i).getEndTime();
+        cur = recordList.get(i).getLatency();
+      }
+      i++;
+    }
+
+    CSVWriterForMeanLatency.write(meanLatList);
+
+
+
     System.out.println("*********************************************************");
     System.out.println("End......");
     System.out.println("Data for Client2");
