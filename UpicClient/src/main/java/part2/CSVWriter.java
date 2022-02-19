@@ -3,13 +3,13 @@ package part2;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.List;
 
 public class CSVWriter {
 
 
-    public static void write(CopyOnWriteArrayList<Record> list) {
-      File csvFile = new File("records.csv");
+    public static void write(List<Record> list, String numThreads) {
+      File csvFile = new File("records" + "_" + numThreads + ".csv");
       if(csvFile.exists()) csvFile.delete();
       try{
         csvFile.createNewFile();

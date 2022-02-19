@@ -4,13 +4,12 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 public class CSVWriterForMeanLatency {
 
 
-    public static void write(List<int[]> list) {
-      File csvFile = new File("recordsMeanLat.csv");
+    public static void write(List<int[]> list, String numThreads) {
+      File csvFile = new File("recordsMeanLat" + "_" + numThreads + ".csv");
       if(csvFile.exists()) csvFile.delete();
       try{
         csvFile.createNewFile();

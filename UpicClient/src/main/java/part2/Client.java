@@ -17,12 +17,14 @@ public class Client {
   private static Integer numThreads;
   private static Integer numLifts;
   private static Integer numRuns;
-  private static CopyOnWriteArrayList<Record> recordList;
+  private static CopyOnWriteArrayList<List<Record>> recordList;
+
 
   public static void main(String[] args) throws InterruptedException{
     System.out.println("*********************************************************");
     System.out.println("Client starts...");
     System.out.println("*********************************************************");
+
 
     CmdParser cmdParser = new CmdParser();
     cmdParser.buildCmdParser(args);
@@ -36,101 +38,89 @@ public class Client {
     recordList = new CopyOnWriteArrayList<>();
 
     long start = System.currentTimeMillis();
-    Integer phase1Threads = numThreads / 4,
+    int phase1Threads = numThreads / 4,
         phase2Threads = numThreads,
-        phase3Threads = numThreads / 4,
-        phase1numSkiers = numSkiers / phase1Threads,
+        phase3Threads = numThreads / 10,
         numReq1 = (int) (numRuns * 0.2 * (double) (numSkiers / phase1Threads)),
         start1 = 1,
         end1 = 90,
         phase2startLatch = phase1Threads / 5;
-    Integer
-        phase2numSkiers = numSkiers / phase2Threads,
-        numReq2 = (int) (numRuns * 0.6 * (numSkiers / phase2Threads)),
+    CountDownLatch latch = new CountDownLatch(phase2startLatch);
+    Phase phase1 = new Phase(numReq1, phase1Threads,IPAddress, resortID, dayID, seasonID,
+            numSkiers, start1, end1, numLifts, success, failure,
+            latch, recordList);
+    phase1.processPhase();
+    latch.await();
+
+    int numReq2 = (int) (numRuns * 0.6 * (numSkiers / phase2Threads)),
         start2 = 91,
         end2 = 360,
         phase3startLatch = phase2Threads / 5;
+    latch = new CountDownLatch(phase3startLatch);
+    Phase phase2 = new Phase(numReq2, phase2Threads,IPAddress, resortID, dayID, seasonID,
+            numSkiers, start2, end2, numLifts, success, failure,
+            latch, recordList);
+    phase2.processPhase();
+    latch.await();
 
-    Integer
-        phase3numSkiers = numSkiers / phase3Threads,
-        numReq3 = (int) (numRuns * 0.1),
+    int numReq3 = (int) (numRuns * 0.1),
         start3 = 361,
         end3 = 420;
-
-    CountDownLatch latch3 = new CountDownLatch(phase3startLatch);
-    CountDownLatch total = new CountDownLatch(phase1Threads + phase2Threads + phase3Threads);
-    CountDownLatch latch2 = new CountDownLatch(phase2startLatch);
-    CountDownLatch endLatch = new CountDownLatch(0);
-
-    //Phase1
-    Phase phase1 = new Phase(numReq1, phase1Threads,IPAddress, resortID, dayID, seasonID,
-        phase1numSkiers, start1, end1, numLifts, success, failure,
-        total, latch2, recordList);
-    phase1.processPhase();
-    latch2.await();
-
-//    Phase2
-//
-    Phase phase2 = new Phase(numReq2, phase2Threads,IPAddress, resortID, dayID, seasonID,
-        phase2numSkiers, start2, end2, numLifts, success, failure,
-        total, latch3, recordList);
-    phase2.processPhase();
-    latch3.await();
-    //Phase3
+    latch = new CountDownLatch(phase3Threads);
     Phase phase3 = new Phase(numReq3, phase3Threads,IPAddress, resortID, dayID, seasonID,
-        phase3numSkiers, start3, end3, numLifts, success, failure,
-        total, endLatch, recordList);
+            numSkiers, start3, end3, numLifts, success, failure, latch, recordList);
     phase3.processPhase();
-    endLatch.await();
-
-    total.await();
+    latch.await();
 
     long end = System.currentTimeMillis();
     long wallTime = end - start;
     long totalTime = 0;
 
-    CSVWriter.write(recordList);
+    List<Record> outputList = new ArrayList<>();
+    for(List<Record> list : recordList) {
+      outputList.addAll(list);
+    }
 
-    Collections.sort(recordList, new Comparator<Record>() {
+    CSVWriter.write(outputList, String.valueOf(numThreads));
+
+    outputList.sort(new Comparator<Record>() {
       @Override
       public int compare(Record o1, Record o2) {
         return Long.compare(o1.getLatency(), o2.getLatency());
       }
     });
 
-    long p99Time = recordList.get((int)(recordList.size() * 0.99)).getLatency();
+    long p99Time = outputList.get((int)(outputList.size() * 0.99)).getLatency();
 
-    for(int i = 0; i <recordList.size(); i++) {
-      totalTime += recordList.get(i).getLatency();
+    for(int i = 0; i <outputList.size(); i++) {
+      totalTime += outputList.get(i).getLatency();
     }
 
-    Collections.sort(recordList, new Comparator<Record>() {
+    Collections.sort(outputList, new Comparator<Record>() {
       @Override
       public int compare(Record o1, Record o2) {
         return Long.compare(o1.getEndTime(), o2.getEndTime());
       }
     });
     List<int[]> meanLatList = new ArrayList<>();
-    int n = recordList.size();
-    long s = recordList.get(0).getEndTime(), cur = 0;
+    int n = outputList.size();
+    long s = outputList.get(0).getEndTime(), cur = 0;
     int count = 1, i = 0, sec = 0;
     while(i < n) {
-      if(recordList.get(i).getEndTime() - start <= 1000) {
-        cur += recordList.get(i).getLatency();
+      if(outputList.get(i).getEndTime() - s <= 1000) {
+        cur += outputList.get(i).getLatency();
         count++;
       } else {
         sec++;
         meanLatList.add(new int[]{sec, (int) (cur / count)});
         count = 1;
-        start = recordList.get(i).getEndTime();
-        cur = recordList.get(i).getLatency();
+        s = outputList.get(i).getEndTime();
+        cur = outputList.get(i).getLatency();
       }
       i++;
     }
 
-    CSVWriterForMeanLatency.write(meanLatList);
-
-
+    CSVWriterForMeanLatency.write(meanLatList, String.valueOf(numThreads));
 
     System.out.println("*********************************************************");
     System.out.println("End......");
@@ -146,8 +136,8 @@ public class Client {
     System.out.println("Number of failed requests :" + failure.get());
     System.out.println("Total wall time: " + wallTime);
     System.out.println("median response time: " +
-        recordList.get((recordList.size()- 1)/2 ).getLatency() + "ms");
-    System.out.println("mean response time: " + (double) (totalTime / recordList.size()) + "ms");
+        outputList.get((outputList.size()- 1)/2 ).getLatency() + "ms");
+    System.out.println("mean response time: " + (double) (totalTime / outputList.size()) + "ms");
     System.out.println("p99 response time: " +  p99Time + "ms");
     System.out.println( "Throughput: " + (int)((success.get() + failure.get()) /
         (double)(wallTime / 1000) )+ " POST requests/second");
