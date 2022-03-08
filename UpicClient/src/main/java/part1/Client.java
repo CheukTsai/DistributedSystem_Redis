@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class Client {
   private static String IPAddress;
   private static final Integer resortID = 1;
-  private static final String dayID = "abc";
+  private static final String dayID = "123";
   private static final String seasonID = "summer";
   private static Integer numSkiers;
   private static Integer numThreads;

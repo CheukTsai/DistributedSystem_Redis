@@ -1,5 +1,6 @@
 package part1;
 
+import com.google.gson.Gson;
 import io.swagger.client.ApiException;
 import io.swagger.client.ApiResponse;
 import io.swagger.client.api.SkiersApi;
@@ -27,6 +28,7 @@ public class SingleThread implements Runnable {
     AtomicInteger successCallCount;
     AtomicInteger failCallCount;
     CountDownLatch nextLatch;
+    Gson gson = new Gson();
 
     public SingleThread(Integer totalRideLiftCall, String IPAddress, Integer resortID,
                         String dayID, String seasonID, Integer startSkierID, Integer endSkierID, Integer startTime,
@@ -50,7 +52,7 @@ public class SingleThread implements Runnable {
 
     @Override
     public void run() {
-        String url = "http://" + IPAddress + ":8080/UpicServer_war/skiers/";
+        String url = "http://" + IPAddress + ":8080/UpicServer_war/";
         SkiersApi api = new SkiersApi();
         api.getApiClient().setBasePath(url).setReadTimeout(10000);
         int curSuccess = 0;
@@ -70,10 +72,12 @@ public class SingleThread implements Runnable {
                             dayID, curSkierId);
                     if (res.getStatusCode() == HTTP_OK || res.getStatusCode() == HTTP_CREATED) {
                         curSuccess++;
+                        System.out.println(res.getData());
                         break;
                     }
                 } catch (ApiException e) {
                     retry++;
+                    System.out.println(e.getCode());
                     e.printStackTrace();
                 }
             }
