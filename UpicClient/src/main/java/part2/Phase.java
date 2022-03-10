@@ -21,11 +21,12 @@ public class Phase {
   AtomicInteger successCallCount;
   AtomicInteger failCallCount;
   CountDownLatch nextLatch;
+  CountDownLatch totalLatch;
 
   public Phase(Integer totalReq, Integer numThread, String IPAddress, Integer resortID, String dayID,
       String seasonID, Integer numSkier, Integer startTime, Integer endTime, Integer numLifts,
       AtomicInteger successCallCount, AtomicInteger failCallCount,
-      CountDownLatch nextLatch, CopyOnWriteArrayList<List<Record>> recordList) {
+      CountDownLatch nextLatch, CopyOnWriteArrayList<List<Record>> recordList, CountDownLatch totalLatch) {
     this.totalReq = totalReq;
     this.numThread = numThread;
     this.IPAddress = IPAddress;
@@ -40,18 +41,17 @@ public class Phase {
     this.failCallCount = failCallCount;
     this.nextLatch = nextLatch;
     this.recordList = recordList;
+    this.totalLatch = totalLatch;
   }
 
   public void processPhase() throws InterruptedException{
     int range = (int) Math.ceil(numSkier / numThread);
-
-
     for(int i = 0; i < numThread; i++) {
       int startSkier = i * range + 1;
       int endSkier = Math.min(numSkier, (i + 1) * range + 1);
       SingleThread t = new SingleThread(totalReq, IPAddress, resortID, dayID, seasonID, startSkier, endSkier,
           startTime, endTime, numLifts, successCallCount, failCallCount,
-          nextLatch, recordList);
+          nextLatch, recordList, totalLatch);
       Thread thread = new Thread(t);
       thread.start();
     }

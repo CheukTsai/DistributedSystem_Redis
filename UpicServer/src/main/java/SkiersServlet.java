@@ -43,10 +43,10 @@ public class SkiersServlet extends HttpServlet {
     @Override
     public void init() throws ServletException {
         try {
+            System.out.println("start");
+            super.init();
             channelPool = new ChannelPool();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (TimeoutException e) {
+        } catch (IOException | TimeoutException e) {
             e.printStackTrace();
         }
     }
@@ -90,13 +90,16 @@ public class SkiersServlet extends HttpServlet {
                 liftRide.setSkierID(skierID);
                 liftRide.setSeasonID(seasonID);
                 liftRide.setResortID(resortID);
-                String msg = "SkierID: " + skierID + "has successfully uploaded" +
-                        "liftRide information #" + liftRide.getLiftID() + "@" + seasonID + "_" +
-                        dayID + "_" + resortID;
-                res.getWriter().write(gson.toJson(new Message(msg)));
-                res.getWriter().flush();
+//                String msg = "SkierID: " + skierID + "has successfully uploaded" +
+//                        "liftRide information #" + liftRide.getLiftID() + "@" + seasonID + "_" +
+//                        dayID + "_" + resortID;
                 String message = gson.toJson(liftRide);
-                sendMessageToQueue(message);
+                if(sendMessageToQueue(message)) {
+                    res.getWriter().write(gson.toJson(new Message("a")));
+                } else {
+                    res.getWriter().write("not success");
+                }
+                res.getWriter().flush();
             }
         } else {
             res.setStatus(HttpServletResponse.SC_NOT_FOUND);
@@ -111,6 +114,7 @@ public class SkiersServlet extends HttpServlet {
             channel.queueDeclare(QUEUE_NAME, false, false, false, null);
             channel.basicPublish("", QUEUE_NAME,
                     null,msg.getBytes(StandardCharsets.UTF_8));
+            channelPool.add(channel);
             return true;
         } catch (InterruptedException | IOException e) {
             e.printStackTrace();

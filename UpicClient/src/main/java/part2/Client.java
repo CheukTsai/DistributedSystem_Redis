@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class Client {
   private static String IPAddress;
   private static final Integer resortID = 1;
-  private static final String dayID = "abc";
+  private static final String dayID = "123";
   private static final String seasonID = "summer";
   private static Integer numSkiers;
   private static Integer numThreads;
@@ -22,7 +22,7 @@ public class Client {
 
   public static void main(String[] args) throws InterruptedException{
     System.out.println("*********************************************************");
-    System.out.println("Client starts...");
+    System.out.println("Client2 starts...");
     System.out.println("*********************************************************");
 
 
@@ -35,6 +35,13 @@ public class Client {
     numLifts = cmdParser.numLifts;
     numRuns = cmdParser.numRuns;
     numSkiers = cmdParser.numSkiers;
+//    IPAddress = "localhost:8080/UpicServer_war_exploded/";
+//    IPAddress = "lb1-d5f956b076f1e934.elb.us-west-2.amazonaws.com/UpicServer_war";
+//    IPAddress = "ec2-34-219-103-126.us-west-2.compute.amazonaws.com:8080//UpicServer_war";
+//    numThreads = 512;
+//    numLifts = 40;
+//    numRuns = 10;
+//    numSkiers =  10000;
     recordList = new CopyOnWriteArrayList<>();
 
     long start = System.currentTimeMillis();
@@ -44,11 +51,13 @@ public class Client {
         numReq1 = (int) (numRuns * 0.2 * (double) (numSkiers / phase1Threads)),
         start1 = 1,
         end1 = 90,
-        phase2startLatch = phase1Threads / 5;
+        phase2startLatch = phase1Threads / 5,
+        totalLatchCount = phase1Threads + phase2Threads + phase3Threads;
     CountDownLatch latch = new CountDownLatch(phase2startLatch);
+    CountDownLatch totalLatch = new CountDownLatch(totalLatchCount);
     Phase phase1 = new Phase(numReq1, phase1Threads,IPAddress, resortID, dayID, seasonID,
             numSkiers, start1, end1, numLifts, success, failure,
-            latch, recordList);
+            latch, recordList, totalLatch);
     phase1.processPhase();
     latch.await();
 
@@ -59,7 +68,7 @@ public class Client {
     latch = new CountDownLatch(phase3startLatch);
     Phase phase2 = new Phase(numReq2, phase2Threads,IPAddress, resortID, dayID, seasonID,
             numSkiers, start2, end2, numLifts, success, failure,
-            latch, recordList);
+            latch, recordList, totalLatch);
     phase2.processPhase();
     latch.await();
 
@@ -68,9 +77,10 @@ public class Client {
         end3 = 420;
     latch = new CountDownLatch(phase3Threads);
     Phase phase3 = new Phase(numReq3, phase3Threads,IPAddress, resortID, dayID, seasonID,
-            numSkiers, start3, end3, numLifts, success, failure, latch, recordList);
+            numSkiers, start3, end3, numLifts, success, failure, latch, recordList, totalLatch);
     phase3.processPhase();
     latch.await();
+    totalLatch.await();
 
     long end = System.currentTimeMillis();
     long wallTime = end - start;

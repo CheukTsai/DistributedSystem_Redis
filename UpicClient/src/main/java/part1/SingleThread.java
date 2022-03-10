@@ -28,13 +28,14 @@ public class SingleThread implements Runnable {
     AtomicInteger successCallCount;
     AtomicInteger failCallCount;
     CountDownLatch nextLatch;
+    CountDownLatch totalLatch;
     Gson gson = new Gson();
 
     public SingleThread(Integer totalRideLiftCall, String IPAddress, Integer resortID,
                         String dayID, String seasonID, Integer startSkierID, Integer endSkierID, Integer startTime,
                         Integer endTime, Integer numLifts,
                         AtomicInteger successCallCount, AtomicInteger failCallCount,
-                        CountDownLatch nextLatch) {
+                        CountDownLatch nextLatch, CountDownLatch totalLatch) {
         this.totalRideLiftCall = totalRideLiftCall;
         this.IPAddress = IPAddress;
         this.resortID = resortID;
@@ -48,13 +49,14 @@ public class SingleThread implements Runnable {
         this.successCallCount = successCallCount;
         this.failCallCount = failCallCount;
         this.nextLatch = nextLatch;
+        this.totalLatch = totalLatch;
     }
 
     @Override
     public void run() {
-        String url = "http://" + IPAddress + ":8080/UpicServer_war/";
+        String url = "http://" + IPAddress + "/UpicServer_war/";
         SkiersApi api = new SkiersApi();
-        api.getApiClient().setBasePath(url).setReadTimeout(10000);
+        api.getApiClient().setBasePath(url).setReadTimeout(100);
         int curSuccess = 0;
         int curFail = 0;
         int i = 0;
@@ -67,17 +69,18 @@ public class SingleThread implements Runnable {
 
             while (retry < ALLOW_ATTEMPTS_NUM) {
                 try {
+                    long start = System.currentTimeMillis();
                     LiftRide curLiftRide = generateLiftRideCall(curTime, curLiftId, curWaitTime);
                     ApiResponse<Void> res = api.writeNewLiftRideWithHttpInfo(curLiftRide, resortID, seasonID,
                             dayID, curSkierId);
                     if (res.getStatusCode() == HTTP_OK || res.getStatusCode() == HTTP_CREATED) {
                         curSuccess++;
-                        System.out.println(res.getData());
+                        long end = System.currentTimeMillis();
+                        System.out.println(end - start);
                         break;
                     }
                 } catch (ApiException e) {
                     retry++;
-                    System.out.println(e.getCode());
                     e.printStackTrace();
                 }
             }
@@ -87,6 +90,7 @@ public class SingleThread implements Runnable {
             i++;
         }
         nextLatch.countDown();
+        totalLatch.countDown();
         successCallCount.getAndAdd(curSuccess);
         failCallCount.getAndAdd(curFail);
     }

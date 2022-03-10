@@ -35,9 +35,10 @@ public class SingleThreadClient {
                 end1 = 90,
                 endLatch = 1;
         CountDownLatch latch = new CountDownLatch(endLatch);
+        CountDownLatch totalLatch = new CountDownLatch(endLatch);
         Phase phase1 = new Phase(numReq1, 1,IPAddress, resortID, dayID, seasonID,
                 numSkiers, start1, end1, numLifts, success, failure,
-                latch);
+                latch, totalLatch);
         latch.await();
         long end = System.currentTimeMillis();
         long wallTime = end - start;

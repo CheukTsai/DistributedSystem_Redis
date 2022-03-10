@@ -5,7 +5,6 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.*;
 
 public class ChannelPool {
@@ -15,20 +14,19 @@ public class ChannelPool {
 
     public ChannelPool() throws IOException, TimeoutException {
         ConnectionFactory factory = new ConnectionFactory();
-        factory.setHost("ec2-35-162-99-87.us-west-2.compute.amazonaws.com");
+        factory.setHost("ec2-34-219-86-106.us-west-2.compute.amazonaws.com");
         factory.setVirtualHost("6650");
         factory.setUsername("zhuocaili");
         factory.setPassword("cs6650lzc");
 //        factory.setHost("localhost");
         this.connection = factory.newConnection();
         this.pool = new LinkedBlockingQueue<>();
-//        int i = 0;
-//        while(i++ < 500) {
-//            System.out.println(i);
-//            Channel channel = connection.createChannel();
-//            channel.queueDeclare(QUEUE_NAME, false, false, false, null);
-//            pool.add(channel);
-//        }
+        int i = 0;
+        while(i++ < 512) {
+            Channel channel = connection.createChannel();
+            pool.add(channel);
+        }
+        System.out.println(pool.size());
     }
 
     public Channel getChannel() throws IOException, InterruptedException {
@@ -36,10 +34,12 @@ public class ChannelPool {
         if(channel == null) {
             channel = connection.createChannel();
         }
-        pool.add(channel);
         return channel;
     }
 
+    public void add(Channel channel) {
+        pool.add(channel);
+    }
     public BlockingQueue<Channel> getPool() {
         return pool;
     }

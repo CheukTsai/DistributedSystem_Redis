@@ -32,12 +32,13 @@ public class SingleThread implements Runnable {
     AtomicInteger successCallCount;
     AtomicInteger failCallCount;
     CountDownLatch nextLatch;
+    CountDownLatch totalLatch;
 
     public SingleThread(Integer totalRideLiftCall, String IPAddress, Integer resortID,
                         String dayID, String seasonID, Integer startSkierID, Integer endSkierID, Integer startTime,
                         Integer endTime, Integer numLifts,
                         AtomicInteger successCallCount, AtomicInteger failCallCount,
-                        CountDownLatch nextLatch, CopyOnWriteArrayList<List<Record>> recordList) {
+                        CountDownLatch nextLatch, CopyOnWriteArrayList<List<Record>> recordList, CountDownLatch totalLatch) {
         this.totalRideLiftCall = totalRideLiftCall;
         this.IPAddress = IPAddress;
         this.resortID = resortID;
@@ -52,14 +53,15 @@ public class SingleThread implements Runnable {
         this.failCallCount = failCallCount;
         this.nextLatch = nextLatch;
         this.recordList = recordList;
+        this.totalLatch = totalLatch;
     }
 
     @Override
     public void run() {
-        String url = "http://" + IPAddress + ":8080/UpicServer_war/skiers/";
+        String url = "http://" + IPAddress +"/UpicServer_war";
         SkiersApi api = new SkiersApi();
         List<Record> records = new ArrayList<>();
-        api.getApiClient().setBasePath(url).setReadTimeout(30000);
+        api.getApiClient().setBasePath(url).setReadTimeout(10000);
         int curSuccess = 0;
         int curFail = 0;
         int i = 0;
@@ -79,8 +81,8 @@ public class SingleThread implements Runnable {
                     if (res.getStatusCode() == HTTP_OK || res.getStatusCode() == HTTP_CREATED) {
                         curSuccess++;
                         long end = System.currentTimeMillis();
+                        System.out.println(end-start);
                         records.add(new Record(start, end, end - start, "POST", res.getStatusCode()));
-//                        System.out.println(end - start);
                         break;
                     }
                 } catch (ApiException e) {
@@ -93,7 +95,9 @@ public class SingleThread implements Runnable {
             }
             i++;
         }
+        System.out.println("thread #: " + totalLatch.getCount());
         nextLatch.countDown();
+        totalLatch.countDown();
         successCallCount.getAndAdd(curSuccess);
         failCallCount.getAndAdd(curFail);
         recordList.add(new ArrayList<>(records));

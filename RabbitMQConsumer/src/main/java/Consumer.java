@@ -7,22 +7,19 @@ import models.LiftRide;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Consumer {
     private final static String QUEUE_NAME = "hello";
-    private final static Integer THREADS = 10;
-    private final static AtomicInteger count = new AtomicInteger(0);
+    private final static Integer THREADS = 500;
 
 
     public static void main(String[] argv) throws Exception {
-        ConcurrentHashMap<String, List<LiftRide>> map = new ConcurrentHashMap<>();
+        ConcurrentHashMap<String, CopyOnWriteArrayList<LiftRide>> map = new ConcurrentHashMap<>();
         ConnectionFactory factory = new ConnectionFactory();
         Gson gson = new Gson();
-        factory.setHost("ec2-35-162-99-87.us-west-2.compute.amazonaws.com");
+        factory.setHost("ec2-34-219-86-106.us-west-2.compute.amazonaws.com");
         factory.setVirtualHost("6650");
         factory.setUsername("zhuocaili");
         factory.setPassword("cs6650lzc");
@@ -37,7 +34,7 @@ public class Consumer {
                     String message = new String(delivery.getBody(), StandardCharsets.UTF_8);
                     LiftRide liftRide = gson.fromJson(message, LiftRide.class);
                     System.out.println(" [x] Received '" + liftRide.toString() + "'");
-                    map.putIfAbsent(liftRide.getSkierID(), new ArrayList<>());
+                    map.putIfAbsent(liftRide.getSkierID(), new CopyOnWriteArrayList<>());
                     map.get(liftRide.getSkierID()).add(liftRide);
                 };
                 channel.basicConsume(QUEUE_NAME, true, deliverCallback, consumerTag -> { });
