@@ -23,6 +23,7 @@ public class SkiersServlet extends HttpServlet {
     private String dayID;
     private String seasonID;
     private ChannelPool channelPool;
+    private final static String EXCHANGE_NAME = "lift_ride";
     private final static String QUEUE_NAME = "hello";
 
     public static class Message{
@@ -94,11 +95,13 @@ public class SkiersServlet extends HttpServlet {
 //                        "liftRide information #" + liftRide.getLiftID() + "@" + seasonID + "_" +
 //                        dayID + "_" + resortID;
                 String message = gson.toJson(liftRide);
-                if(sendMessageToQueue(message)) {
-                    res.getWriter().write(gson.toJson(new Message("a")));
-                } else {
-                    res.getWriter().write("not success");
-                }
+                sendMessageToQueue(message);
+                res.getWriter().write(gson.toJson(new Message("a")));
+//                if(sendMessageToQueue(message)) {
+//                    res.getWriter().write(gson.toJson(new Message("a")));
+//                } else {
+//                    res.getWriter().write("not success");
+//                }
                 res.getWriter().flush();
             }
         } else {
@@ -108,17 +111,18 @@ public class SkiersServlet extends HttpServlet {
         }
     }
 
-    private boolean sendMessageToQueue(String msg) {
+    private void sendMessageToQueue(String msg) {
         try {
             Channel channel = channelPool.getChannel();
-            channel.queueDeclare(QUEUE_NAME, false, false, false, null);
-            channel.basicPublish("", QUEUE_NAME,
+            channel.exchangeDeclare(EXCHANGE_NAME, "fanout");
+            channel.basicPublish(EXCHANGE_NAME, "",
                     null,msg.getBytes(StandardCharsets.UTF_8));
+//            channel.queueDeclare(QUEUE_NAME, false, false, false, null);
+//            channel.basicPublish("", QUEUE_NAME,
+//                    null,msg.getBytes(StandardCharsets.UTF_8));
             channelPool.add(channel);
-            return true;
         } catch (InterruptedException | IOException e) {
             e.printStackTrace();
-            return false;
         }
     }
 

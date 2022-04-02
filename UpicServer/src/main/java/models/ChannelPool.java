@@ -14,7 +14,7 @@ public class ChannelPool {
 
     public ChannelPool() throws IOException, TimeoutException {
         ConnectionFactory factory = new ConnectionFactory();
-        factory.setHost("ec2-34-219-86-106.us-west-2.compute.amazonaws.com");
+        factory.setHost("ec2-54-200-24-157.us-west-2.compute.amazonaws.com");
         factory.setVirtualHost("6650");
         factory.setUsername("zhuocaili");
         factory.setPassword("cs6650lzc");

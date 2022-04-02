@@ -12,7 +12,7 @@ public class Client {
   private static String IPAddress;
   private static final Integer resortID = 1;
   private static final String dayID = "123";
-  private static final String seasonID = "summer";
+  private static final String seasonID = "1";
   private static Integer numSkiers;
   private static Integer numThreads;
   private static Integer numLifts;
@@ -26,22 +26,23 @@ public class Client {
     System.out.println("*********************************************************");
 
 
-    CmdParser cmdParser = new CmdParser();
-    cmdParser.buildCmdParser(args);
+//    CmdParser cmdParser = new CmdParser();
+//    cmdParser.buildCmdParser(args);
     AtomicInteger success = new AtomicInteger(0);
     AtomicInteger failure = new AtomicInteger(0);
-    IPAddress = cmdParser.ip;
-    numThreads = cmdParser.numThreads;
-    numLifts = cmdParser.numLifts;
-    numRuns = cmdParser.numRuns;
-    numSkiers = cmdParser.numSkiers;
-//    IPAddress = "localhost:8080/UpicServer_war_exploded/";
+//    IPAddress = cmdParser.ip;
+//    numThreads = cmdParser.numThreads;
+//    numLifts = cmdParser.numLifts;
+//    numRuns = cmdParser.numRuns;
+//    numSkiers = cmdParser.numSkiers;
+    IPAddress = "localhost:8080/UpicServer_war_exploded/";
+//      IPAddress = "6650-lb-843d040d79513d08.elb.us-west-2.amazonaws.com:8080/Assignment2_Server_war/";
 //    IPAddress = "lb1-d5f956b076f1e934.elb.us-west-2.amazonaws.com/UpicServer_war";
 //    IPAddress = "ec2-34-219-103-126.us-west-2.compute.amazonaws.com:8080//UpicServer_war";
-//    numThreads = 512;
-//    numLifts = 40;
-//    numRuns = 10;
-//    numSkiers =  10000;
+    numThreads = 512;
+    numLifts = 40;
+    numRuns = 10;
+    numSkiers =  20000;
     recordList = new CopyOnWriteArrayList<>();
 
     long start = System.currentTimeMillis();

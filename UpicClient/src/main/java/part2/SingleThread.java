@@ -58,7 +58,7 @@ public class SingleThread implements Runnable {
 
     @Override
     public void run() {
-        String url = "http://" + IPAddress +"/UpicServer_war";
+        String url = "http://" + IPAddress;
         SkiersApi api = new SkiersApi();
         List<Record> records = new ArrayList<>();
         api.getApiClient().setBasePath(url).setReadTimeout(10000);
@@ -87,6 +87,9 @@ public class SingleThread implements Runnable {
                     }
                 } catch (ApiException e) {
                     retry++;
+                    System.out.println(e.getMessage());
+                    System.out.println(e.getCode());
+                    System.out.println(e.getResponseBody());
                     e.printStackTrace();
                 }
             }
