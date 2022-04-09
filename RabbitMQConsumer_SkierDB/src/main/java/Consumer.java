@@ -29,13 +29,11 @@ public class Consumer {
         ConcurrentHashMap<String, CopyOnWriteArrayList<LiftRide>> map = new ConcurrentHashMap<>();
         ConnectionFactory factory = new ConnectionFactory();
         Gson gson = new Gson();
-        System.out.println("Listening......");
-        factory.setHost("ec2-54-200-24-157.us-west-2.compute.amazonaws.com");
+        System.out.println("SkierDB Consumer Listening......");
+        factory.setHost("ec2-50-112-215-119.us-west-2.compute.amazonaws.com");
         factory.setVirtualHost("6650");
         factory.setUsername("zhuocaili");
         factory.setPassword("cs6650lzc");
-//        JedisMain jedisMain = new JedisMain("localhost", 6379);
-//        factory.setHost("localhost");
         Connection connection = factory.newConnection();
         Runnable runnable = () -> {
             Channel channel;
@@ -76,33 +74,31 @@ public class Consumer {
     public static void addHash(LiftRide liftRide) {
 
         Map<String, String> map = new HashMap<>();
-        String key = liftRide.getSkierID() + "_" + liftRide.getResortID() + liftRide.getSeasonID() + liftRide.getDayID() + liftRide.getLiftID() + liftRide.getTime();
+        String key = "s" + liftRide.getSkierID() + "_" + "d" + liftRide.getDayID() + ":" + "s" + liftRide.getSeasonID() +
+                "d" + liftRide.getDayID() +"r" +  liftRide.getResortID()+"l" + liftRide.getLiftID() + "t" + liftRide.getTime();
         map.put("skierId", liftRide.getSkierID());
         map.put("resortId", liftRide.getResortID());
         map.put("seasonId", liftRide.getSeasonID());
         map.put("dayId", liftRide.getDayID());
         map.put("liftId", liftRide.getLiftID());
+        map.put("vertical", String.valueOf(Integer.parseInt(liftRide.getLiftID()) * 10));
         map.put("time", liftRide.getTime());
 
         Jedis jedis = pool.getResource();
         try {
             //save to redis
             jedis.hmset(key, map);
-
-            //after saving the data, lets retrieve them to be sure that it has really added in redis
-            Map<String, String> retrieveMap = jedis.hgetAll(key);
+//            Map<String, String> retrieveMap = jedis.hgetAll(key);
 //            for (String keyMap : retrieveMap.keySet()) {
 //                System.out.println(keyMap + " " + retrieveMap.get(keyMap));
 //            }
 
         } catch (JedisException e) {
-            //if something wrong happen, return it back to the pool
             if (null != jedis) {
                 pool.returnBrokenResource(jedis);
                 jedis = null;
             }
         } finally {
-            ///it's important to return the Jedis instance to the pool once you've finished using it
             if (null != jedis)
                 pool.returnResource(jedis);
         }

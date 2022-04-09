@@ -27,8 +27,8 @@ public class Consumer {
         ConcurrentHashMap<String, CopyOnWriteArrayList<LiftRide>> map = new ConcurrentHashMap<>();
         ConnectionFactory factory = new ConnectionFactory();
         Gson gson = new Gson();
-        System.out.println("Listening......");
-        factory.setHost("ec2-54-200-24-157.us-west-2.compute.amazonaws.com");
+        System.out.println("ResortInfo Consumer Listening......");
+        factory.setHost("ec2-50-112-215-119.us-west-2.compute.amazonaws.com");
         factory.setVirtualHost("6650");
         factory.setUsername("zhuocaili");
         factory.setPassword("cs6650lzc");
@@ -71,7 +71,9 @@ public class Consumer {
     public static void addHash(LiftRide liftRide) {
 
         Map<String, String> map = new HashMap<>();
-        String key = liftRide.getSkierID() + liftRide.getResortID() + liftRide.getSeasonID() + liftRide.getDayID() + liftRide.getLiftID() + liftRide.getTime() ;
+        String key = "r" + liftRide.getResortID() + "_" + "d" + liftRide.getDayID() + ":" + "s" + liftRide.getSeasonID() +
+                "d" + liftRide.getDayID() +"r" +  liftRide.getResortID()+"l" +
+                liftRide.getLiftID() + "t" + liftRide.getTime();
         map.put("skierId", liftRide.getSkierID());
         map.put("resortId", liftRide.getResortID());
         map.put("seasonId", liftRide.getSeasonID());
