@@ -47,11 +47,16 @@ public class Consumer {
                     String message = new String(delivery.getBody(), StandardCharsets.UTF_8);
                     LiftRide liftRide = gson.fromJson(message, LiftRide.class);
                     System.out.println(" [x] Received '" + liftRide.toString() + "'");
+                    try{
 //                    map.putIfAbsent(liftRide.getSkierID(), new CopyOnWriteArrayList<>());
 //                    map.get(liftRide.getSkierID()).add(liftRide);
-                    addHash(liftRide);
+                        addHash(liftRide);
+                    } finally {
+                        System.out.println(" [x] Done");
+                        channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
+                    }
                 };
-                channel.basicConsume(queueName, true, deliverCallback, consumerTag -> { });
+                channel.basicConsume(queueName, false, deliverCallback, consumerTag -> { });
             } catch (IOException e) {
                 e.printStackTrace();
             }

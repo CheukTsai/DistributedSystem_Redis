@@ -12,8 +12,10 @@ public class JedisMain {
     //the jedis connection pool..
     private static JedisPool pool = null;
 
-    public JedisMain(String redisHost, Integer redisPort) {
+    public JedisMain() {
         //configure our pool connection
+        String redisHost = "localhost";
+        Integer redisPort = 6379;
         pool = new JedisPool(redisHost, redisPort);
 
     }
@@ -82,7 +84,7 @@ public class JedisMain {
     }
 
     public static void main(String[] args){
-        JedisMain main = new JedisMain("18.237.204.48", 6379);
+        JedisMain main = new JedisMain();
         main.addSets();
         main.addHash();
     }

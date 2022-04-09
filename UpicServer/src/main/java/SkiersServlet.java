@@ -95,13 +95,13 @@ public class SkiersServlet extends HttpServlet {
 //                        "liftRide information #" + liftRide.getLiftID() + "@" + seasonID + "_" +
 //                        dayID + "_" + resortID;
                 String message = gson.toJson(liftRide);
-                sendMessageToQueue(message);
-                res.getWriter().write(gson.toJson(new Message("a")));
-//                if(sendMessageToQueue(message)) {
-//                    res.getWriter().write(gson.toJson(new Message("a")));
-//                } else {
-//                    res.getWriter().write("not success");
-//                }
+//                sendMessageToQueue(message);
+//                res.getWriter().write(gson.toJson(new Message("a")));
+                if(sendMessageToQueue(message)) {
+                    res.getWriter().write(gson.toJson(new Message("success")));
+                } else {
+                    res.getWriter().write("not success");
+                }
                 res.getWriter().flush();
             }
         } else {
@@ -111,7 +111,7 @@ public class SkiersServlet extends HttpServlet {
         }
     }
 
-    private void sendMessageToQueue(String msg) {
+    private boolean sendMessageToQueue(String msg) {
         try {
             Channel channel = channelPool.getChannel();
             channel.exchangeDeclare(EXCHANGE_NAME, "fanout");
@@ -121,8 +121,10 @@ public class SkiersServlet extends HttpServlet {
 //            channel.basicPublish("", QUEUE_NAME,
 //                    null,msg.getBytes(StandardCharsets.UTF_8));
             channelPool.add(channel);
+            return true;
         } catch (InterruptedException | IOException e) {
             e.printStackTrace();
+            return false;
         }
     }
 
