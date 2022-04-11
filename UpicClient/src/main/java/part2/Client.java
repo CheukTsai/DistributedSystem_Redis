@@ -39,7 +39,7 @@ public class Client {
 //      IPAddress = "6650-lb-843d040d79513d08.elb.us-west-2.amazonaws.com:8080/Assignment2_Server_war/";
 //    IPAddress = "lb1-d5f956b076f1e934.elb.us-west-2.amazonaws.com/UpicServer_war";
 //    IPAddress = "ec2-34-219-103-126.us-west-2.compute.amazonaws.com:8080//UpicServer_war";
-    numThreads = 128;
+    numThreads = 256;
     numLifts = 40;
     numRuns = 10;
     numSkiers =  20000;
@@ -92,7 +92,7 @@ public class Client {
       outputList.addAll(list);
     }
 
-    CSVWriter.write(outputList, String.valueOf(numThreads));
+//    CSVWriter.write(outputList, String.valueOf(numThreads));
 
     outputList.sort(new Comparator<Record>() {
       @Override
@@ -131,7 +131,7 @@ public class Client {
       i++;
     }
 
-    CSVWriterForMeanLatency.write(meanLatList, String.valueOf(numThreads));
+//    CSVWriterForMeanLatency.write(meanLatList, String.valueOf(numThreads));
 
     System.out.println("*********************************************************");
     System.out.println("End......");

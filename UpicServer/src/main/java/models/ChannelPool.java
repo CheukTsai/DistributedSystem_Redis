@@ -14,11 +14,11 @@ public class ChannelPool {
 
     public ChannelPool() throws IOException, TimeoutException {
         ConnectionFactory factory = new ConnectionFactory();
-        factory.setHost("ec2-50-112-215-119.us-west-2.compute.amazonaws.com");
-        factory.setVirtualHost("6650");
-        factory.setUsername("zhuocaili");
-        factory.setPassword("cs6650lzc");
-//        factory.setHost("localhost");
+//        factory.setHost("ec2-50-112-215-119.us-west-2.compute.amazonaws.com");
+//        factory.setVirtualHost("6650");
+//        factory.setUsername("zhuocaili");
+//        factory.setPassword("cs6650lzc");
+        factory.setHost("localhost");
         this.connection = factory.newConnection();
         this.pool = new LinkedBlockingQueue<>();
         int i = 0;
